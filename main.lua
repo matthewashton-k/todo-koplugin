@@ -17,18 +17,41 @@ local logger = require("logger")
 local _ = require("gettext")
 local DataStorage = require("datastorage")
 local LuaSettings = require("luasettings")
+local IconButton = require("ui/widget/iconbutton")
 
 local TodoApplication = WidgetContainer:extend({
     name = "todo",
     todos = {},
     current_frame = nil,
     settings_file = DataStorage:getSettingsDir() .. "/todos.lua",
+    exit_button = nil,
 })
 
 function TodoApplication:init()
     self.ui.menu:registerToMainMenu(self)
+    self:addExitButton();
     self:loadSaved()
 end
+
+function TodoApplication:addExitButton()
+    local star_width = Screen:scaleBySize(25)
+    local ellipsis_button_width = Screen:scaleBySize(34)
+    self.exit_button = IconButton:new{
+        icon = "exit",
+        width = star_width,
+        height = star_width,
+        padding = math.floor((ellipsis_button_width - star_width)/2) + Size.padding.button,
+        callback = function()
+            self:remover()
+        end,
+    }
+end
+
+function TodoApplication:remover()
+    UiManager:close(self.current_frame)
+    UiManager:setDirty(nil, "full")
+end
+
 
 function TodoApplication:loadSaved()
     logger.warn("Loading todos from settings")
@@ -162,6 +185,7 @@ function TodoApplication:showItems()
                     end,
                 },
                 remove_completed_button,
+                self.exit_button
             },
             ScrollableContainer:new{
                 dimen = Geom:new{
