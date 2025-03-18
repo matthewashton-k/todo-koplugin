@@ -24,19 +24,17 @@ local TodoApplication = WidgetContainer:extend({
     todos = {},
     current_frame = nil,
     settings_file = DataStorage:getSettingsDir() .. "/todos.lua",
-    exit_button = nil,
 })
 
 function TodoApplication:init()
     self.ui.menu:registerToMainMenu(self)
-    self:addExitButton();
     self:loadSaved()
 end
 
 function TodoApplication:addExitButton()
     local star_width = Screen:scaleBySize(25)
     local ellipsis_button_width = Screen:scaleBySize(34)
-    self.exit_button = IconButton:new{
+    return IconButton:new{
         icon = "exit",
         width = star_width,
         height = star_width,
@@ -105,6 +103,7 @@ function TodoApplication:refreshUI()
 end
 
 function TodoApplication:showItems()
+    local margin_span = HorizontalSpan:new{ width = Size.padding.large }
     local screen_width = Screen:getWidth()
     local screen_height = Screen:getHeight()
     if self.current_frame then
@@ -141,8 +140,9 @@ function TodoApplication:showItems()
         padding = Screen:scaleBySize(10),
         dimen = Screen:getSize(),
         VerticalGroup:new{
-            align = "left",
+            -- align = "left",
             HorizontalGroup:new{
+                margin_span,
                 Button:new{
                     text = _("Add Todo"),
                     callback = function()
@@ -184,8 +184,11 @@ function TodoApplication:showItems()
                         input_dialog:onShowKeyboard()
                     end,
                 },
+                margin_span,
                 remove_completed_button,
-                self.exit_button
+                margin_span,
+                self:addExitButton(),
+                margin_span
             },
             ScrollableContainer:new{
                 dimen = Geom:new{
