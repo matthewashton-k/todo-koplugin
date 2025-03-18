@@ -15,11 +15,14 @@ local Geom = require("ui/geometry")
 local Size = require("ui/size")
 local logger = require("logger")
 local _ = require("gettext")
+local DataStorage = require("datastorage")
+local LuaSettings = require("luasettings")
 
 local TodoApplication = WidgetContainer:extend({
     name = "todo",
     todos = {},
     current_frame = nil,
+    settings_file = DataStorage:getSettingsDir() .. "/todos.lua",
 })
 
 function TodoApplication:init()
@@ -28,25 +31,30 @@ function TodoApplication:init()
 end
 
 function TodoApplication:loadSaved()
-    self.todos = {
-        { text = "Sample Todo", checked = false },
-        { text = "Sample Todo2", checked = false }
-    }
-    logger.warn("Loaded todos: " .. #self.todos .. " items")
+    logger.warn("Loading todos from settings")
+    local settings = LuaSettings:open(self.settings_file)
+    local saved_todos = settings:readSetting("todos")
+    
+    if saved_todos and #saved_todos > 0 then
+        self.todos = saved_todos
+    else
+        self.todos = {
+            { text = "Sample Todo", checked = false },
+        }
+    end
 end
 
 function TodoApplication:saveTodos()
-    logger.warn("Saving todos (total: " .. #self.todos .. ")")
+    local settings = LuaSettings:open(self.settings_file)
+    settings:saveSetting("todos", self.todos)
+    settings:flush()
 end
 
 function TodoApplication:createTodoItem(todo, index)
-    logger.warn("Creating todo item #" .. index .. " with checked=" .. tostring(todo.checked))
     local check_button = CheckButton:new{
         checked = todo.checked,
         callback = function()
-            logger.warn("Checkbox clicked for item #" .. index)
             self.todos[index].checked = not self.todos[index].checked
-            logger.warn("New checked state for #" .. index .. ": " .. tostring(self.todos[index].checked))
             self:saveTodos()
             self:refreshUI() -- Refresh UI after state change
         end,
@@ -74,7 +82,6 @@ function TodoApplication:refreshUI()
 end
 
 function TodoApplication:showItems()
-    logger.warn("Showing todo list UI")
     local screen_width = Screen:getWidth()
     local screen_height = Screen:getHeight()
     if self.current_frame then
@@ -89,6 +96,22 @@ function TodoApplication:showItems()
         table.insert(todo_list, 1, self:createTodoItem(todo, index))
     end
 
+    -- Add delete button
+    local remove_completed_button = Button:new{
+        text = _("Remove completed"),
+        callback = function()
+            local new_todos = {}
+            for _, todo in ipairs(self.todos) do
+                if not todo.checked then
+                    table.insert(new_todos, todo)
+                end
+            end
+            self.todos = new_todos
+            self:saveTodos()
+            self:refreshUI()
+        end,
+    }
+
     self.current_frame = FrameContainer:new{
         background = Blitbuffer.COLOR_WHITE,
         bordersize = 0,
@@ -96,45 +119,49 @@ function TodoApplication:showItems()
         dimen = Screen:getSize(),
         VerticalGroup:new{
             align = "left",
-            Button:new{
-                text = _("Add Todo"),
-                callback = function()
-                    local InputDialog = require("ui/widget/inputdialog")
-                    local input_dialog
-                    input_dialog = InputDialog:new{
-                        title = _("New Todo"),
-                        input = "",
-                        input_hint = _("Enter todo text"),
-                        description = _("Please enter the todo item text."),
-                        buttons = {
-                            {
+            HorizontalGroup:new{
+                Button:new{
+                    text = _("Add Todo"),
+                    callback = function()
+                        local InputDialog = require("ui/widget/inputdialog")
+                        local input_dialog
+                        input_dialog = InputDialog:new{
+                            title = _("New Todo"),
+                            input = "",
+                            input_hint = _("Enter todo text"),
+                            description = _("Please enter the todo item text."),
+                            buttons = {
                                 {
-                                    text = _("Cancel"),
-                                    id = "close",
-                                    callback = function()
-                                        UiManager:close(input_dialog)
-                                    end,
-                                },
-                                {
-                                    text = _("Save"),
-                                    is_enter_default = true,
-                                    callback = function()
-                                        local new_text = input_dialog:getInputText()
-                                        if new_text and new_text ~= "" then
-                                            table.insert(self.todos, { text = new_text, checked = false })
-                                            self:refreshUI()
-                                        else
-                                            logger.warn("Empty todo not added.")
-                                        end
-                                        UiManager:close(input_dialog)
-                                    end,
-                                },
-                            }
-                        },
-                    }
-                    UiManager:show(input_dialog)
-                    input_dialog:onShowKeyboard()
-                end,
+                                    {
+                                        text = _("Cancel"),
+                                        id = "close",
+                                        callback = function()
+                                            UiManager:close(input_dialog)
+                                        end,
+                                    },
+                                    {
+                                        text = _("Save"),
+                                        is_enter_default = true,
+                                        callback = function()
+                                            local new_text = input_dialog:getInputText()
+                                            if new_text and new_text ~= "" then
+                                                table.insert(self.todos, { text = new_text, checked = false })
+                                                self:saveTodos()
+                                                self:refreshUI()
+                                            else
+                                                logger.warn("Empty todo not added.")
+                                            end
+                                            UiManager:close(input_dialog)
+                                        end,
+                                    },
+                                }
+                            },
+                        }
+                        UiManager:show(input_dialog)
+                        input_dialog:onShowKeyboard()
+                    end,
+                },
+                remove_completed_button,
             },
             ScrollableContainer:new{
                 dimen = Geom:new{
@@ -147,14 +174,12 @@ function TodoApplication:showItems()
     }
     UiManager:show(self.current_frame)
     UiManager:setDirty(todo_list, "ui");
-    logger.warn("UI refresh completed")
 end
 
 function TodoApplication:addToMainMenu(menu_items)
     menu_items.todo = {
         text = _("Todo App"),
         callback = function()
-            logger.warn("Todo menu item clicked")
             self:showItems()
         end
     }
