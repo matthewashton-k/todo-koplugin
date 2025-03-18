@@ -86,7 +86,7 @@ function TodoApplication:showItems()
         id = "todo_list",
     }
     for index, todo in ipairs(self.todos) do
-        table.insert(todo_list, self:createTodoItem(todo, index))
+        table.insert(todo_list, 1, self:createTodoItem(todo, index))
     end
 
     self.current_frame = FrameContainer:new{
@@ -99,7 +99,41 @@ function TodoApplication:showItems()
             Button:new{
                 text = _("Add Todo"),
                 callback = function()
-                    logger.warn("Add Todo button clicked")
+                    local InputDialog = require("ui/widget/inputdialog")
+                    local input_dialog
+                    input_dialog = InputDialog:new{
+                        title = _("New Todo"),
+                        input = "",
+                        input_hint = _("Enter todo text"),
+                        description = _("Please enter the todo item text."),
+                        buttons = {
+                            {
+                                {
+                                    text = _("Cancel"),
+                                    id = "close",
+                                    callback = function()
+                                        UiManager:close(input_dialog)
+                                    end,
+                                },
+                                {
+                                    text = _("Save"),
+                                    is_enter_default = true,
+                                    callback = function()
+                                        local new_text = input_dialog:getInputText()
+                                        if new_text and new_text ~= "" then
+                                            table.insert(self.todos, { text = new_text, checked = false })
+                                            self:refreshUI()
+                                        else
+                                            logger.warn("Empty todo not added.")
+                                        end
+                                        UiManager:close(input_dialog)
+                                    end,
+                                },
+                            }
+                        },
+                    }
+                    UiManager:show(input_dialog)
+                    input_dialog:onShowKeyboard()
                 end,
             },
             ScrollableContainer:new{
@@ -111,8 +145,8 @@ function TodoApplication:showItems()
             },
         }
     }
-
     UiManager:show(self.current_frame)
+    UiManager:setDirty(todo_list, "ui");
     logger.warn("UI refresh completed")
 end
 
