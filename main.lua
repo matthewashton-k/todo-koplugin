@@ -48,6 +48,8 @@ end
 
 function TodoApplication:remover()
     self.current_frame:free()
+    self:free()
+    UiManager:close(self)
     UiManager:close(self.current_frame)
     UiManager:setDirty(nil, "full")
 end
