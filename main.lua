@@ -18,6 +18,10 @@ local _ = require("gettext")
 local DataStorage = require("datastorage")
 local LuaSettings = require("luasettings")
 local IconButton = require("ui/widget/iconbutton")
+local socket = require("socket")
+local http = require("socket.http")
+local socketutil = require("socketutil")
+local ltn12 = require("ltn12")
 
 local TodoApplication = WidgetContainer:extend({
     name = "todo",
@@ -25,6 +29,40 @@ local TodoApplication = WidgetContainer:extend({
     current_frame = nil,
     settings_file = DataStorage:getSettingsDir() .. "/todos.lua",
 })
+
+function pushToGoogle()
+    local sink = {}
+    local source = ltn12.source.string("")
+    socketutil:set_timeout(socketutil.LARGE_BLOCK_TIMEOUT, socketutil.LARGE_TOTAL_TIMEOU)
+    local req = {
+        url = "http://localhost:3000/todos/pull_google",
+        method = "POST",
+        sink = ltn12.sink.table(sink),
+        source = source,
+    }
+    local code,headers,status = socket.skip(1, http.request(req))
+    socketutil:reset_timeout()
+    local result_response = sink[1]
+    logger.info("result: ", result_response)
+    logger.info("code: ",code)
+end
+
+function pullFromGoogle()
+    local sink = {}
+    local source = ltn12.source.string("")
+    socketutil:set_timeout(socketutil.LARGE_BLOCK_TIMEOUT, socketutil.LARGE_TOTAL_TIMEOU)
+    local req = {
+        url = "http://localhost:3000/todos/pull_google",
+        method = "POST",
+        sink = ltn12.sink.table(sink),
+        source = source,
+    }
+    local code,headers,status = socket.skip(1, http.request(req))
+    socketutil:reset_timeout()
+    local result_response = sink[1]
+    logger.info("result: ", result_response)
+    logger.info("code: ",code)
+end
 
 function TodoApplication:init()
     self.ui.menu:registerToMainMenu(self)
@@ -141,6 +179,24 @@ function TodoApplication:showItems()
         end,
     }
 
+    local push_google_btn = Button:new{
+        text = _("Push to Google"),
+        callback = function ()
+            pushToGoogle()
+
+        end
+    }
+
+    local pull_google_btn = Button:new{
+        text = _("Pull from Google"),
+        callback = function ()
+            logger.warn("pulling from google")
+            pullFromGoogle()
+            self:loadSaved()
+            self:refreshUI()
+        end
+    }
+
     self.current_frame = FrameContainer:new{
         background = Blitbuffer.COLOR_WHITE,
         bordersize = 0,
@@ -193,6 +249,10 @@ function TodoApplication:showItems()
                 },
                 margin_span,
                 remove_completed_button,
+                margin_span,
+                pull_google_btn,
+                margin_span,
+                push_google_btn,
                 margin_span,
                 self:addExitButton(),
                 margin_span
