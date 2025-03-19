@@ -98,8 +98,10 @@ end
 
 function TodoApplication:refreshUI()
     if self.current_frame then
-        UiManager:close(self.current_frame)
+        self:free()
         self.current_frame:free()
+        UiManager:close(self)
+        UiManager:close(self.current_frame)
         self.current_frame = nil
     end
     self:showItems()
