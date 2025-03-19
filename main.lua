@@ -47,6 +47,7 @@ function TodoApplication:addExitButton()
 end
 
 function TodoApplication:remover()
+    self.current_frame:free()
     UiManager:close(self.current_frame)
     UiManager:setDirty(nil, "full")
 end
@@ -98,6 +99,7 @@ end
 function TodoApplication:refreshUI()
     if self.current_frame then
         UiManager:close(self.current_frame)
+        self.current_frame:free()
         self.current_frame = nil
     end
     self:showItems()
