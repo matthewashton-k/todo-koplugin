@@ -40,6 +40,7 @@ function TodoApplication:addExitButton()
         height = star_width,
         padding = math.floor((ellipsis_button_width - star_width)/2) + Size.padding.button,
         callback = function()
+            self:loadSaved()
             self:remover()
         end,
     }
@@ -55,7 +56,7 @@ function TodoApplication:loadSaved()
     logger.warn("Loading todos from settings")
     local settings = LuaSettings:open(self.settings_file)
     local saved_todos = settings:readSetting("todos")
-    
+
     if saved_todos and #saved_todos > 0 then
         self.todos = saved_todos
     else
