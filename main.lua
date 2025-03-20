@@ -6,6 +6,7 @@ local ScrollableContainer = require("ui/widget/container/scrollablecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan = require("ui/widget/horizontalspan")
 local VerticalGroup = require("ui/widget/verticalgroup")
+local VerticalSpan = require("ui/widget/verticalspan")
 local TextWidget = require("ui/widget/textwidget")
 local Button = require("ui/widget/button")
 local Screen = require("device").screen
@@ -188,7 +189,7 @@ function TodoApplication:showItems()
     }
 
     local pull_google_btn = Button:new{
-        text = _("Pull from Google"),
+        text = _("Pull From Google"),
         callback = function ()
             logger.warn("pulling from google")
             pullFromGoogle()
@@ -207,7 +208,7 @@ function TodoApplication:showItems()
             HorizontalGroup:new{
                 margin_span,
                 Button:new{
-                    text = _("Add Todo"),
+                    text = _("New"),
                     callback = function()
                         local InputDialog = require("ui/widget/inputdialog")
                         local input_dialog
@@ -250,12 +251,15 @@ function TodoApplication:showItems()
                 margin_span,
                 remove_completed_button,
                 margin_span,
+                self:addExitButton(),
+                margin_span
+            },
+            VerticalSpan:new{width = Size.padding.large},
+            HorizontalGroup:new{
+                -- HorizontalSpan:new{ width = Screen:scaleBySize(50)},
                 pull_google_btn,
                 margin_span,
                 push_google_btn,
-                margin_span,
-                self:addExitButton(),
-                margin_span
             },
             ScrollableContainer:new{
                 dimen = Geom:new{
