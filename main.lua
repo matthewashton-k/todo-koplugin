@@ -36,7 +36,7 @@ function pushToGoogle()
     local source = ltn12.source.string("")
     socketutil:set_timeout(socketutil.LARGE_BLOCK_TIMEOUT, socketutil.LARGE_TOTAL_TIMEOU)
     local req = {
-        url = "http://localhost:3000/todos/pull_google",
+        url = "http://localhost:3000/todos/push_google",
         method = "POST",
         sink = ltn12.sink.table(sink),
         source = source,
@@ -184,7 +184,6 @@ function TodoApplication:showItems()
         text = _("Push to Google"),
         callback = function ()
             pushToGoogle()
-
         end
     }
 
@@ -257,9 +256,9 @@ function TodoApplication:showItems()
             VerticalSpan:new{width = Size.padding.large},
             HorizontalGroup:new{
                 -- HorizontalSpan:new{ width = Screen:scaleBySize(50)},
-                pull_google_btn,
-                margin_span,
                 push_google_btn,
+                margin_span,
+                pull_google_btn,
             },
             ScrollableContainer:new{
                 dimen = Geom:new{
